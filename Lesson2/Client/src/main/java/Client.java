@@ -1,5 +1,10 @@
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
 
 public class Client {
     private Socket socket;
@@ -9,6 +14,7 @@ public class Client {
     private Callback<String> callOnChangeClientList;
     private Callback<String> callOnAuth;
     private Callback<String> callOnError;
+    private Path pathHistory;
 
     Thread readerMessages;
 
@@ -51,9 +57,13 @@ public class Client {
                         //сообщения об ошибках
                         else if (message.startsWith("/error")){
                         }
-                        //не служебные сообщения (в чат)
+                        //не служебные сообщения (в чат) и историю
                         else {
                             callOnMsgReceived.callback(message);
+                            //пишем строку в конец файла, не очищая его
+                            Files.write(pathHistory, (message+"\n").getBytes(),
+                                    StandardOpenOption.CREATE, StandardOpenOption.APPEND,
+                                    StandardOpenOption.WRITE);
                         }
                     }
                 } catch (IOException e) {
@@ -117,5 +127,38 @@ public class Client {
 
     public void setCallOnError(Callback<String> callOnError) {
         this.callOnError = callOnError;
+    }
+
+    public void setPathHistory(String login) {
+        String dir = "Client/history/" + login + ".txt";
+        pathHistory = Paths.get(dir);
+
+        //заранее создадим промежуточную директорию history, если ее еще нет
+        try {
+            Files.createDirectories(pathHistory.getParent());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getHistory(String login){
+        setPathHistory(login);
+
+        try {
+            List<String> lines = Files.readAllLines(pathHistory);
+            //обрезаем до 10 последних строк
+            if (lines.size() > 10)
+                lines = lines.subList(lines.size()-10, lines.size());
+
+            //приводим к одной строке, подходящей для вывода в чат
+            StringBuilder result = new StringBuilder();
+            for (String line : lines) {
+                result.append(line).append("\n");
+            }
+            return result.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }
