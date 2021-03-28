@@ -20,6 +20,8 @@ public class ClientUI extends JFrame {
     private JPanel  loginPanel;
     private Client clientNetwork = new Client();
 
+    private String lastLogin;
+
     public ClientUI() {
         setCallbacks();
         setMainFrame();
@@ -46,6 +48,8 @@ public class ClientUI extends JFrame {
             loginPanel.setVisible(false);
             add(chatPanel, BorderLayout.CENTER);
             chatPanel.setVisible(true);
+            //загружаем чат из истории
+            areaChat.setText(clientNetwork.getHistory(lastLogin));
         });
 
         // при сообщении об ошибке показываем pop-up
@@ -160,6 +164,7 @@ public class ClientUI extends JFrame {
             clientNetwork.sendMessage("/auth " +
                     loginField.getText() + " " +
                     String.valueOf(passwordField.getPassword()));
+            lastLogin = loginField.getText();
             loginField.setText("");
             passwordField.setText("");
         });
