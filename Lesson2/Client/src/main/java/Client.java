@@ -18,6 +18,8 @@ public class Client {
 
     Thread readerMessages;
 
+    private static final int PRELOAD_CHAT_ROWS = 100;
+
     public void connect() {
         try {
             socket = new Socket("localhost",8189);
@@ -146,9 +148,9 @@ public class Client {
 
         try {
             List<String> lines = Files.readAllLines(pathHistory);
-            //обрезаем до 10 последних строк
-            if (lines.size() > 10)
-                lines = lines.subList(lines.size()-10, lines.size());
+            //обрезаем до 100 последних строк
+            if (lines.size() > PRELOAD_CHAT_ROWS)
+                lines = lines.subList(lines.size()-PRELOAD_CHAT_ROWS, lines.size());
 
             //приводим к одной строке, подходящей для вывода в чат
             StringBuilder result = new StringBuilder();
