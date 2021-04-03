@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private Vector<ClientHandler> clients;
@@ -15,11 +17,12 @@ public class Server {
         clients = new Vector<>();
         //authService = new SimpleAuthService();
         authService = BDAuthService.getInstance();
+        ExecutorService clientsExecutor = Executors.newCachedThreadPool();
         try (ServerSocket serverSocket = new ServerSocket(8189)) {
             System.out.println("Сервер запущен на порту 8189");
             while (true) {
                 Socket socket = serverSocket.accept();
-                new ClientHandler(this, socket);
+                clientsExecutor.submit(new ClientHandler(this, socket));
                 System.out.println("Подключился новый клиент");
             }
         } catch (IOException e) {
@@ -27,6 +30,7 @@ public class Server {
         }
         finally {
             BDAuthService.close();
+            clientsExecutor.shutdown();
         }
         System.out.println("Сервер завершил свою работу");
     }
