@@ -2,6 +2,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClientHandler implements Runnable {
     private String nickname;
@@ -9,6 +13,7 @@ public class ClientHandler implements Runnable {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
+    private static final Logger logger = Logger.getLogger(ClientHandler.class.getName());
 
     public String getNickname() {
         return nickname;
@@ -20,8 +25,14 @@ public class ClientHandler implements Runnable {
             this.socket = socket;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
+
+            logger.setLevel(Level.ALL);
+            logger.setUseParentHandlers(false);
+            Handler handler = new ConsoleHandler();
+            handler.setLevel(Level.ALL);
+            logger.addHandler(handler);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("Ошибка создания InputStream/OutputStream");
         }
     }
 
@@ -30,6 +41,7 @@ public class ClientHandler implements Runnable {
         try {
             while (true) {
                 String msg = in.readUTF();
+                logger.fine("Получено сообщение от нового клиента: " + msg);
                 // /auth login1 pass1
                 if (msg.startsWith("/auth ")) {
                     String[] tokens = msg.split("\\s");
@@ -38,12 +50,16 @@ public class ClientHandler implements Runnable {
                         sendMsg("/authok " + nick);
                         nickname = nick;
                         server.subscribe(this);
+                        logger.info("Клиент " + nick + " прошел аутентификацию");
                         break;
                     }
+                    else
+                        logger.finer("Аутентификация не пройдена");
                 }
             }
             while (true) {
                 String msg = in.readUTF();
+                logger.fine("Получено сообщение от " + nickname +": " + msg);
                 if (msg.startsWith("/")) {
                     if (msg.equals("/end")) {
                         sendMsg("/end");
@@ -58,7 +74,7 @@ public class ClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("Ошибка получения сообщения");
         } finally {
             ClientHandler.this.disconnect();
         }
@@ -69,7 +85,7 @@ public class ClientHandler implements Runnable {
         try {
             out.writeUTF(msg);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("Ошибка отправки сообщения");
         }
     }
 
@@ -77,18 +93,10 @@ public class ClientHandler implements Runnable {
         server.unsubscribe(this);
         try {
             in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
             out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
             socket.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("Ошибка закрытия потоков чтения/записи или сокета");
         }
     }
 }

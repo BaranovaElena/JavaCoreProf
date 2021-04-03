@@ -4,35 +4,43 @@ import java.net.Socket;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.*;
 
 public class Server {
     private Vector<ClientHandler> clients;
     private AuthService authService;
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
 
     public AuthService getAuthService() {
         return authService;
     }
 
     public Server() {
+        logger.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        Handler handler = new ConsoleHandler();
+        handler.setLevel(Level.ALL);
+        logger.addHandler(handler);
+
         clients = new Vector<>();
         //authService = new SimpleAuthService();
         authService = BDAuthService.getInstance();
         ExecutorService clientsExecutor = Executors.newCachedThreadPool();
         try (ServerSocket serverSocket = new ServerSocket(8189)) {
-            System.out.println("Сервер запущен на порту 8189");
+            logger.info("Сервер запущен на порту 8189");
             while (true) {
                 Socket socket = serverSocket.accept();
                 clientsExecutor.submit(new ClientHandler(this, socket));
-                System.out.println("Подключился новый клиент");
+                logger.fine("Подключился новый клиент");
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.severe("Произошла ошибка при основного сокета сервера");
         }
         finally {
             BDAuthService.close();
             clientsExecutor.shutdown();
         }
-        System.out.println("Сервер завершил свою работу");
+        logger.info("Сервер завершил свою работу");
     }
 
     public void broadcastMsg(String msg) {
