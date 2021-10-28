@@ -1,9 +1,11 @@
 import java.sql.*;
+import java.util.logging.Logger;
 
 public final class BDAuthService implements AuthService{
     private static BDAuthService service;
     private static final String DB_CONNECTION = "jdbc:sqlite:AuthDB.db";
     private static Connection connection;
+    private static final Logger logger = Logger.getLogger(BDAuthService.class.getName());
 
     private BDAuthService(){}   //скрываем конструктор для реализации синглитона
 
@@ -15,9 +17,9 @@ public final class BDAuthService implements AuthService{
             e.printStackTrace();
         }
         if (connection!=null)
-            System.out.println("connected to DB");
+            logger.info("Сервер подключился к БД");
         else
-            System.out.println("fail connection");
+            logger.warning("Ошибка подключения к БД");
     }
 
     //вместо конструктора статический метод, возвращающий статический экземпляр класса
@@ -36,7 +38,7 @@ public final class BDAuthService implements AuthService{
                 return resultSet.getString("nickname");
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.severe("Произошла ошибка запроса к БД");
         }
         return null;
     }
@@ -44,9 +46,9 @@ public final class BDAuthService implements AuthService{
     public static void close() {
         try {
             connection.close();
-            System.out.println("disconnected from BD");
+            logger.info("Закрытие соединения с БД");
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.severe("Произошла ошибка при закрытии соединения с БД");
         }
     }
 }
